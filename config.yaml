@@ -22,3 +22,16 @@ reportConfig: # 上报配置 warn级别以上报到im工具
   maxCount: 20 #最大缓存数量 达到刷新间隔或最大记录数 触发发送开发测试调小一点，生产环境调大一点
   level: warn # 指定上报级别
 
+elkConfig: # ELK配置 将日志发送到Elasticsearch
+  addresses: # Elasticsearch地址列表
+    - "http://localhost:9200"
+  username: "" # 可选 用户名
+  password: "" # 可选 密码
+  apiKey: "" # 可选 API密钥
+  serviceToken: "" # 可选 服务令牌
+  indexPrefix: "zlog" # 索引前缀 默认为zlog
+  flushSec: 5 # 刷新间隔 单位秒
+  maxCount: 100 # 最大缓存数量
+  bulkSize: 100 # 批量大小
+  async: true # 是否异步发送
+

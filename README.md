@@ -12,6 +12,8 @@
 
 6、能写到文件中，能够压缩，批量落盘。**(现在k8s基本上都是输出到标准输出中，每个节点一个pod专门收集)**
 
+7、**新增ELK支持**：直接发送日志到Elasticsearch，支持批量发送、异步处理、多种认证方式等特性。
+
 
 
 ### 配置文件
@@ -40,6 +42,19 @@ reportConfig: # 上报配置 warn级别以上报到im工具
   flushSec: 3 # 刷新间隔单位为秒 开发测试调小一点，生产环境调大一点
   maxCount: 20 #最大缓存数量 达到刷新间隔或最大记录数 触发发送开发测试调小一点，生产环境调大一点
   level: warn # 指定上报级别
+
+elkConfig: # ELK配置 将日志发送到Elasticsearch
+  addresses: # Elasticsearch地址列表
+    - "http://localhost:9200"
+  username: "" # 可选 用户名
+  password: "" # 可选 密码
+  apiKey: "" # 可选 API密钥
+  serviceToken: "" # 可选 服务令牌
+  indexPrefix: "zlog" # 索引前缀 默认为zlog
+  flushSec: 5 # 刷新间隔 单位秒
+  maxCount: 100 # 最大缓存数量
+  bulkSize: 100 # 批量大小
+  async: true # 是否异步发送
 
 
 ```
@@ -230,4 +245,92 @@ for i := 0; i < 100; i++ {
 ```
 
 ![img](https://cdn.nlark.com/yuque/0/2024/png/12466223/1734196509008-4795f6cf-6f9e-44aa-9187-1fe809684463.png)
+
+### 7、ELK支持 - 直接发送到Elasticsearch
+
+新增ELK支持功能，可以直接将日志发送到Elasticsearch，无需额外的日志收集工具。
+
+#### 基本使用
+
+```go
+func TestELKLogger(t *testing.T) {
+    config := &Config{
+        Name:  "my-service",
+        Level: zap.NewAtomicLevelAt(zap.InfoLevel),
+        Mode:  "console",
+        Json:  true, // ELK需要JSON格式
+        ELKConfig: &ELKConfig{
+            Addresses: []string{"http://localhost:9200"},
+            IndexPrefix: "myapp",
+            FlushSec: 5,
+            MaxCount: 100,
+            Async: true,
+        },
+    }
+    
+    logger := config.Build()
+    defer logger.Sync()
+    
+    // 结构化日志记录
+    logger.Info("用户登录成功", 
+        zap.String("user_id", "12345"),
+        zap.String("username", "john_doe"),
+        zap.String("ip", "192.168.1.100"),
+    )
+    
+    logger.Error("数据库连接失败", 
+        zap.String("error", "connection timeout"),
+        zap.String("database", "user_db"),
+        zap.Int("retry_count", 3),
+    )
+}
+```
+
+#### 认证配置
+
+支持多种认证方式：
+
+```yaml
+# 用户名密码认证
+elkConfig:
+  addresses:
+    - "http://localhost:9200"
+  username: "elastic"
+  password: "your_password"
+
+# API密钥认证
+elkConfig:
+  addresses:
+    - "http://localhost:9200"
+  apiKey: "your_api_key"
+
+# 服务令牌认证
+elkConfig:
+  addresses:
+    - "http://localhost:9200"
+  serviceToken: "your_service_token"
+```
+
+#### 性能优化
+
+```yaml
+elkConfig:
+  addresses:
+    - "http://localhost:9200"
+  indexPrefix: "myapp"
+  flushSec: 10      # 生产环境建议10-30秒
+  maxCount: 500     # 生产环境建议500-1000
+  bulkSize: 500     # 与maxCount保持一致
+  async: true       # 推荐使用异步发送
+```
+
+#### 索引管理
+
+日志会自动创建按日期命名的索引：
+- 格式：`{indexPrefix}-{YYYY.MM.DD}`
+- 示例：`myapp-2024.01.15`
+
+#### 详细文档
+
+更多ELK功能的使用说明请参考：[ELK_README.md](./ELK_README.md)
 

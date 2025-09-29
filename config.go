@@ -49,6 +49,7 @@ type Config struct {
 	Color         bool                 `json:",default=true" mapstructure:"color"`      // 非 JSON 格式下是否添加颜色
 	Port          int32                `json:",default=true" mapstructure:"port"`       // 启动日志 HTTP 服务的端口
 	ReportConfig  *report.ReportConfig `json:",optional" mapstructure:"reportConfig"`   // 日志上报配置
+	ELKConfig     *ELKConfig           `json:",optional" mapstructure:"elkConfig"`      // ELK配置
 	options       []zap.Option         // zap 选项
 }
 
@@ -162,6 +163,33 @@ func (lc *Config) Build() *zap.Logger {
 		}
 		reportCore := zapcore.NewCore(encoder, report.NewReportWriterBuffer(lc.ReportConfig), lc.ReportConfig.Level)
 		cores = append(cores, reportCore)
+	}
+
+	// 如果启用了ELK输出
+	if lc.ELKConfig != nil {
+		// ELK输出强制使用JSON格式
+		if !lc.Json {
+			elkEncoderConfig := encoderConfig
+			elkEncoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+			elkEncoder := zapcore.NewJSONEncoder(elkEncoderConfig)
+
+			elkWriteSyncer, err := ELKWriteSyncer(lc.ELKConfig)
+			if err != nil {
+				log.Printf("创建ELK写入器失败: %v", err)
+			} else {
+				elkCore := zapcore.NewCore(elkEncoder, elkWriteSyncer, lc.Level)
+				cores = append(cores, elkCore)
+			}
+		} else {
+			// 如果已经是JSON格式，直接使用现有的encoder
+			elkWriteSyncer, err := ELKWriteSyncer(lc.ELKConfig)
+			if err != nil {
+				log.Printf("创建ELK写入器失败: %v", err)
+			} else {
+				elkCore := zapcore.NewCore(encoder, elkWriteSyncer, lc.Level)
+				cores = append(cores, elkCore)
+			}
+		}
 	}
 
 	core := zapcore.NewTee(cores...) // 合并日志核心
