@@ -14,6 +14,8 @@
 
 7、**新增ELK支持**：直接发送日志到Elasticsearch，支持批量发送、异步处理、多种认证方式等特性。
 
+8、**新增缓存日志存储**：支持MySQL和Redis存储日志，提供高效的日志查询和分析功能。
+
 
 
 ### 配置文件
@@ -332,5 +334,123 @@ elkConfig:
 
 #### 详细文档
 
-更多ELK功能的使用说明请参考：[ELK_README.md](./ELK_README.md)
+更多ELK功能的使用说明请参考：[ELK_README.md](elk/ELK_README.md)
+
+### 8、缓存日志存储 - MySQL/Redis支持
+
+新增缓存日志存储功能，支持将日志存储到MySQL或Redis中，提供高效的日志查询和分析。
+
+#### 基本使用
+
+```go
+func TestCacheLogger(t *testing.T) {
+    config := &Config{
+        Name:  "my-service",
+        Level: zap.NewAtomicLevelAt(zap.InfoLevel),
+        Mode:  "console",
+        Json:  true, // 缓存需要JSON格式
+        CacheConfig: &cache.CacheConfig{
+            Type: "mysql",
+            MySQL: &cache.MySQLConfig{
+                Host:     "localhost",
+                Port:     3306,
+                Username: "root",
+                Password: "password",
+                Database: "zlog",
+                TablePrefix: "zlog",
+            },
+            BatchSize: 100,
+            Async: true,
+        },
+    }
+    
+    logger := config.Build()
+    defer logger.Sync()
+    
+    // 结构化日志记录
+    logger.Info("用户登录成功", 
+        zap.String("user_id", "12345"),
+        zap.String("username", "john_doe"),
+        zap.String("ip", "192.168.1.100"),
+    )
+    
+    logger.Error("数据库连接失败", 
+        zap.String("error", "connection timeout"),
+        zap.String("database", "user_db"),
+        zap.Int("retry_count", 3),
+    )
+}
+```
+
+#### 存储方式配置
+
+**MySQL配置**:
+```yaml
+cacheConfig:
+  type: "mysql"
+  mysql:
+    host: "localhost"
+    port: 3306
+    username: "root"
+    password: "password"
+    database: "zlog"
+    table_prefix: "zlog"
+```
+
+**Redis配置**:
+```yaml
+cacheConfig:
+  type: "redis"
+  redis:
+    host: "localhost"
+    port: 6379
+    password: ""
+    database: 0
+    key_prefix: "zlog"
+```
+
+#### 日志查询功能
+
+```go
+// 创建缓存实例
+cache, err := cache.CreateCache(config.CacheConfig)
+if err != nil {
+    panic(err)
+}
+defer cache.Close()
+
+// 查询日志
+opts := &cache.QueryOptions{
+    StartTime: &startTime,
+    EndTime:   &endTime,
+    Levels:    []string{"error", "warn"},
+    Projects:  []string{"user-service"},
+    Keywords:  []string{"登录", "失败"},
+    Limit:     100,
+    OrderBy:   "timestamp",
+    OrderDir:  "desc",
+}
+
+result, err := cache.Query(context.Background(), opts)
+if err != nil {
+    log.Printf("查询失败: %v", err)
+    return
+}
+
+fmt.Printf("查询结果: 总数=%d, 当前页=%d\n", result.Total, result.Page)
+```
+
+#### 性能优化
+
+```yaml
+cacheConfig:
+  batch_size: 500      # 批量写入大小
+  flush_interval: "10s" # 刷新间隔
+  max_cache_size: 10000 # 最大缓存大小
+  async: true          # 异步写入
+```
+
+#### 详细文档
+
+更多缓存功能的使用说明请参考：[cache/README.md](cache/README.md)
 

@@ -1,4 +1,4 @@
-package zlog
+package elk
 
 import (
 	"bytes"

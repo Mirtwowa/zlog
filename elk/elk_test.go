@@ -1,6 +1,7 @@
-package zlog
+package elk
 
 import (
+	"github.com/luxun9527/zlog"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestELKConfig(t *testing.T) {
 
 func TestConfigWithELK(t *testing.T) {
 	// 测试包含ELK配置的完整配置
-	config := &Config{
+	config := &zlog.Config{
 		Name:  "test-service",
 		Level: zap.NewAtomicLevelAt(zap.InfoLevel),
 		Mode:  "console",

@@ -2,6 +2,8 @@ package zlog
 
 import (
 	"fmt"
+	"github.com/luxun9527/zlog/cache"
+	"github.com/luxun9527/zlog/elk"
 	"github.com/luxun9527/zlog/report"  // 自定义的日志上报模块
 	"github.com/mitchellh/mapstructure" // 用于将 map 转换为结构体
 	"go.uber.org/zap"                   // 高性能的日志库
@@ -49,7 +51,8 @@ type Config struct {
 	Color         bool                 `json:",default=true" mapstructure:"color"`      // 非 JSON 格式下是否添加颜色
 	Port          int32                `json:",default=true" mapstructure:"port"`       // 启动日志 HTTP 服务的端口
 	ReportConfig  *report.ReportConfig `json:",optional" mapstructure:"reportConfig"`   // 日志上报配置
-	ELKConfig     *ELKConfig           `json:",optional" mapstructure:"elkConfig"`      // ELK配置
+	ELKConfig     *elk.ELKConfig       `json:",optional" mapstructure:"elkConfig"`      // ELK配置
+	CacheConfig   *cache.CacheConfig   `json:",optional" mapstructure:"cacheConfig"`    // 缓存配置
 	options       []zap.Option         // zap 选项
 }
 
@@ -173,7 +176,7 @@ func (lc *Config) Build() *zap.Logger {
 			elkEncoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
 			elkEncoder := zapcore.NewJSONEncoder(elkEncoderConfig)
 
-			elkWriteSyncer, err := ELKWriteSyncer(lc.ELKConfig)
+			elkWriteSyncer, err := elk.ELKWriteSyncer(lc.ELKConfig)
 			if err != nil {
 				log.Printf("创建ELK写入器失败: %v", err)
 			} else {
@@ -182,12 +185,39 @@ func (lc *Config) Build() *zap.Logger {
 			}
 		} else {
 			// 如果已经是JSON格式，直接使用现有的encoder
-			elkWriteSyncer, err := ELKWriteSyncer(lc.ELKConfig)
+			elkWriteSyncer, err := elk.ELKWriteSyncer(lc.ELKConfig)
 			if err != nil {
 				log.Printf("创建ELK写入器失败: %v", err)
 			} else {
 				elkCore := zapcore.NewCore(encoder, elkWriteSyncer, lc.Level)
 				cores = append(cores, elkCore)
+			}
+		}
+	}
+
+	// 如果启用了缓存输出
+	if lc.CacheConfig != nil {
+		// 缓存输出强制使用JSON格式
+		if !lc.Json {
+			cacheEncoderConfig := encoderConfig
+			cacheEncoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+			cacheEncoder := zapcore.NewJSONEncoder(cacheEncoderConfig)
+
+			cacheWriteSyncer, err := cache.CacheWriteSyncer(lc.CacheConfig)
+			if err != nil {
+				log.Printf("创建缓存写入器失败: %v", err)
+			} else {
+				cacheCore := zapcore.NewCore(cacheEncoder, cacheWriteSyncer, lc.Level)
+				cores = append(cores, cacheCore)
+			}
+		} else {
+			// 如果已经是JSON格式，直接使用现有的encoder
+			cacheWriteSyncer, err := cache.CacheWriteSyncer(lc.CacheConfig)
+			if err != nil {
+				log.Printf("创建缓存写入器失败: %v", err)
+			} else {
+				cacheCore := zapcore.NewCore(encoder, cacheWriteSyncer, lc.Level)
+				cores = append(cores, cacheCore)
 			}
 		}
 	}

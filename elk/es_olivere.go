@@ -1,6 +1,7 @@
-package zlog
+package elk
 
 import (
+	"github.com/luxun9527/zlog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -17,11 +18,11 @@ var (
 
 func init() {
 	ErrorEsOlivereLogger = &esOlivereLogger{
-		logger: DefaultLogger.With(zap.String("module", EsModuleKey)).Sugar(),
+		logger: zlog.DefaultLogger.With(zap.String("module", zlog.EsModuleKey)).Sugar(),
 		level:  zapcore.ErrorLevel,
 	}
 	InfoEsOlivereLogger = &esOlivereLogger{
-		logger: DefaultLogger.With(zap.String("module", EsModuleKey)).Sugar(),
+		logger: zlog.DefaultLogger.With(zap.String("module", zlog.EsModuleKey)).Sugar(),
 		level:  zapcore.DebugLevel,
 	}
 }
@@ -40,7 +41,7 @@ func (esLog *esOlivereLogger) Printf(format string, v ...interface{}) {
 }
 func (esLog *esOlivereLogger) Update(logger ...*zap.Logger) {
 	if len(logger) == 0 {
-		esLog.logger = DefaultLogger.With(zap.String("module", EsModuleKey)).Sugar()
+		esLog.logger = zlog.DefaultLogger.With(zap.String("module", zlog.EsModuleKey)).Sugar()
 		return
 	}
 	esLog.logger = logger[0].Sugar()

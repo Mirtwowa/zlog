@@ -1,6 +1,7 @@
-package zlog
+package elk
 
 import (
+	"github.com/luxun9527/zlog"
 	"time"
 
 	"github.com/spf13/viper"
@@ -10,7 +11,7 @@ import (
 // ELKExample 演示如何使用ELK功能
 func ELKExample() {
 	// 方法1: 通过配置文件初始化
-	config := &Config{}
+	config := &zlog.Config{}
 
 	// 使用viper读取配置
 	v := viper.New()
@@ -44,7 +45,7 @@ func ELKExample() {
 // ELKExampleDirect 演示如何直接配置ELK
 func ELKExampleDirect() {
 	// 方法2: 直接配置ELK
-	config := &Config{
+	config := &zlog.Config{
 		Name:  "elk-example",
 		Level: zap.NewAtomicLevelAt(zap.InfoLevel),
 		Mode:  "console",
@@ -99,7 +100,7 @@ func ELKExampleDirect() {
 
 // ELKExampleWithFields 演示使用zap.Field的高级用法
 func ELKExampleWithFields() {
-	config := &Config{
+	config := &zlog.Config{
 		Name:  "elk-advanced",
 		Level: zap.NewAtomicLevelAt(zap.DebugLevel),
 		Mode:  "console",

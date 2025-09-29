@@ -35,3 +35,29 @@ elkConfig: # ELK配置 将日志发送到Elasticsearch
   bulkSize: 100 # 批量大小
   async: true # 是否异步发送
 
+cacheConfig: # 缓存配置 支持MySQL和Redis存储日志
+  type: "mysql" # 缓存类型 mysql 或 redis
+  batch_size: 100 # 批量写入大小
+  flush_interval: "5s" # 刷新间隔
+  max_cache_size: 10000 # 最大缓存大小
+  async: true # 是否异步写入
+  
+  mysql: # MySQL配置
+    host: "localhost"
+    port: 3306
+    username: "root"
+    password: "password"
+    database: "zlog"
+    charset: "utf8mb4"
+    max_open_conns: 100
+    max_idle_conns: 10
+    table_prefix: "zlog"
+    
+  redis: # Redis配置
+    host: "localhost"
+    port: 6379
+    password: "" # 可选
+    database: 0
+    pool_size: 10
+    key_prefix: "zlog"
+

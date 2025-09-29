@@ -6,6 +6,8 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.12.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-lark/lark v1.14.0
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/viper v1.18.2

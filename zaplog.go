@@ -1,6 +1,7 @@
 package zlog
 
 import (
+	"github.com/luxun9527/zlog/elk"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -78,8 +79,8 @@ func InitDefaultLogger(loggerConfig *Config) {
 	DefaultLogger = loggerConfig.Build()
 	DefaultSugarLog = DefaultLogger.Sugar()
 	RedisLogger.Update()
-	InfoEsOlivereLogger.Update()
-	ErrorEsOlivereLogger.Update()
+	elk.InfoEsOlivereLogger.Update()
+	elk.ErrorEsOlivereLogger.Update()
 	KafkaSaramaLogger.Update()
 	GinOutPut.Update()
 }
